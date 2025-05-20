@@ -15,7 +15,7 @@ class _HomeState extends State<Home> {
       backgroundColor: Color.fromARGB(255, 244, 241, 241),
       body: SingleChildScrollView(
         child: Container(
-          child: Column(
+          child:  Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Stack(
