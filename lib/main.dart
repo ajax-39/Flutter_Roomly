@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hotelbooking/pages/detaile_page.dart';
 import 'package:hotelbooking/pages/home.dart';
 
 void main() {
@@ -32,7 +33,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: Home(),
+      home: DetailePage(),
     );
   }
 }
