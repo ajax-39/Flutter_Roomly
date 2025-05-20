@@ -1,15 +1,124 @@
 import 'package:flutter/material.dart';
+import 'package:hotelbooking/pages/bottomnav.dart';
 import 'package:hotelbooking/pages/signup_page.dart';
+import 'package:hotelbooking/services/firebase_services.dart';
 import 'package:hotelbooking/services/widget_support.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
 
   @override
   _LoginState createState() => _LoginState();
-}
+} 
 
 class _LoginState extends State<Login> {
+  // Firebase service
+  final FirebaseServices _firebaseServices = FirebaseServices();
+
+  // Text controllers
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  // Loading state
+  bool _isLoading = false;
+
+  // Login function
+  void _login() async {
+    // Check if fields are empty
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      Fluttertoast.showToast(
+        msg: "Please fill all fields",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final user = await _firebaseServices.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+      
+      if (user != null) {
+        // Navigate to bottom nav
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Bottomnav()),
+        );
+      }
+    } catch (e) {
+      String errorMessage = "Login failed. Please try again.";
+      
+      if (e.toString().contains("user-not-found")) {
+        errorMessage = "User not found. Please check your email.";
+      } else if (e.toString().contains("wrong-password")) {
+        errorMessage = "Incorrect password. Please try again.";
+      } else if (e.toString().contains("invalid-email")) {
+        errorMessage = "Invalid email format.";
+      }
+      
+      Fluttertoast.showToast(
+        msg: errorMessage,
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Reset password function
+  void _resetPassword() async {
+    if (_emailController.text.isEmpty) {
+      Fluttertoast.showToast(
+        msg: "Please enter your email to reset your password",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+      return;
+    }
+
+    try {
+      await _firebaseServices.resetPassword(email: _emailController.text.trim());
+      Fluttertoast.showToast(
+        msg: "Password reset email sent. Check your inbox.",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+      );
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: "Failed to send reset email. Please check your email address.",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,6 +160,7 @@ class _LoginState extends State<Login> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: TextField(
+                  controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     border: InputBorder.none,
@@ -73,6 +183,7 @@ class _LoginState extends State<Login> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: TextField(
+                  controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
                     border: InputBorder.none,
@@ -86,9 +197,7 @@ class _LoginState extends State<Login> {
                 alignment: Alignment.centerRight,
                 margin: EdgeInsets.only(right: 30.0, top: 10.0),
                 child: GestureDetector(
-                  onTap: () {
-                    // Handle forgot password
-                  },
+                  onTap: _resetPassword,
                   child: Text(
                     "Forgot Password ?",
                     style: TextStyle(
@@ -105,19 +214,22 @@ class _LoginState extends State<Login> {
                 child: MaterialButton(
                   height: 50,
                   minWidth: double.infinity,
-                  onPressed: () {},
+                  onPressed: _isLoading ? null : _login,
                   color: Colors.blue,
+                  disabledColor: Colors.blue.withOpacity(0.6),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Text(
-                    "LogIn",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: _isLoading 
+                    ? CircularProgressIndicator(color: Colors.white)
+                    : Text(
+                        "LogIn",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                 ),
               ),
               SizedBox(height: 20.0),
@@ -130,7 +242,6 @@ class _LoginState extends State<Login> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      // Navigate to signup page
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => SignupPage()),
